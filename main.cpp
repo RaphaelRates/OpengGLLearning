@@ -144,8 +144,9 @@ int main()
         ShaderTriangle.setInt("ourTexture2", 1); // Passando o número da unidade de textura para o shader
 
         glm::mat4 transform = glm::mat4(1.0f);
-        transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
-        transform = glm::rotate(transform, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
+        transform = glm::translate(transform, glm::vec3(0.0f, -0.0f, 0.0f));
+        float scaleValue = sin(glfwGetTime()) * 0.5f + 1.0f; // Valor oscilante entre 0.5 e 1.5
+        transform = glm::scale(transform, glm::vec3(scaleValue, scaleValue, 1.0f));
         ShaderTriangle.use();
         unsigned int transformLoc = glGetUniformLocation(ShaderTriangle.ID, "transform");
         glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
