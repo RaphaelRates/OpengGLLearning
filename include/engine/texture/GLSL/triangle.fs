@@ -5,10 +5,13 @@ in vec3 ourColor;
 in vec2 TexCoord;
 
 uniform sampler2D ourTexture;
-uniform sampler2D ourTexture2;  // Adicionando o uniforme para a segunda textura
+uniform sampler2D ourTexture2;
 
 void main()
 {
+    vec4 texColor1 = texture(ourTexture, TexCoord); // Cor da textura base
+    vec4 texColor2 = texture(ourTexture2, TexCoord * 2.0); // Cor da segunda textura, com coordenadas escaladas
+
     // Mesclar as duas texturas com a função mix
-    FragColor = mix(texture(ourTexture2, vec2(TexCoord.x * 2, TexCoord.y * 2)),  texture(ourTexture,  TexCoord), 0.5); 
+    FragColor = mix(texColor1, texColor2, 0.5); // Mesclagem 50/50
 }

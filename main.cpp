@@ -88,7 +88,7 @@ int main()
     int width, height, nrChannels;
 
     stbi_set_flip_vertically_on_load(true);
-    unsigned char *data = stbi_load("mamaco.jpg", &width, &height, &nrChannels, 0);
+    unsigned char *data = stbi_load("stainless-steel.jpg", &width, &height, &nrChannels, 0);
     if (data)
     {
         GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB; // Verifica os canais
@@ -111,7 +111,7 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     // Carregar imagem para a segunda textura
-    data = stbi_load("meliodas.jpg", &width, &height, &nrChannels, 0);
+    data = stbi_load("gosma.jpg", &width, &height, &nrChannels, 0);
     if (data)
     {
         GLenum format = (nrChannels == 4) ? GL_RGBA : GL_RGB;
