@@ -143,8 +143,13 @@ int main()
         glBindTexture(GL_TEXTURE_2D, texture2);
         ShaderTriangle.setInt("ourTexture2", 1); // Passando o número da unidade de textura para o shader
 
-        // Usar o shader e atualizar os deslocamentos
+        glm::mat4 transform = glm::mat4(1.0f);
+        transform = glm::translate(transform, glm::vec3(0.5f, -0.5f, 0.0f));
+        transform = glm::rotate(transform, (float)glfwGetTime(), glm::vec3(0.0f, 0.0f, 1.0f));
         ShaderTriangle.use();
+        unsigned int transformLoc = glGetUniformLocation(ShaderTriangle.ID, "transform");
+        glUniformMatrix4fv(transformLoc, 1, GL_FALSE, glm::value_ptr(transform));
+
         ShaderTriangle.setFloat("movPosition", offsetX);
         ShaderTriangle.setFloat("offsetY", offsetY);
 
