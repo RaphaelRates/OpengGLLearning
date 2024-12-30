@@ -24,8 +24,6 @@ Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
-bool uKeyPressed = false;
-bool lightEnabled = true;
 
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
@@ -158,10 +156,10 @@ int main()
     lightingShader.setFloat("light.linear", 0.09f);
     lightingShader.setFloat("light.quadratic", 0.032f);
 
-    glm::vec3 white(0.21f, 0.21f, 0.21f);
+    glm::vec3 white(0.3f, 0.3f, 0.3f);
     ;
-    float specular = 0.6f;
-    float diffuse = 1.5f;
+    float specular = 0.5f;
+    float diffuse = 0.3f;
 
     while (!glfwWindowShouldClose(window))
     {
@@ -180,24 +178,10 @@ int main()
         lightingShader.use();
         lightingShader.setFloat("time", glfwGetTime());
         lightingShader.setVec3("viewPos", camera.Position);
-        if (lightEnabled)
-        {
-            // Configuração de iluminação ativa
-            lightingShader.setVec3("light.ambient", white.x, white.y, white.z);
-            lightingShader.setVec3("light.diffuse", white.x + diffuse, white.y + diffuse, white.z + diffuse);
-            lightingShader.setVec3("light.specular", white.x + specular, white.y + specular, white.z + specular);
-            lightingShader.setVec3("light.position", camera.Position);
-            lightingShader.setVec3("light.direction", camera.Front);
-            lightingShader.setFloat("light.cutOff", glm::cos(glm::radians(22.5f)));
-            lightingShader.setFloat("light.outerCutOff", glm::cos(glm::radians(28.5f)));
-        }
-        else
-        {
-            // Configuração de iluminação desativada (valores nulos)
-            lightingShader.setVec3("light.ambient", 0.0f, 0.0f, 0.0f);
-            lightingShader.setVec3("light.diffuse", 0.0f, 0.0f, 0.0f);
-            lightingShader.setVec3("light.specular", 0.0f, 0.0f, 0.0f);
-        }
+        lightingShader.setVec3("light.ambient", white.x, white.y, white.z);
+        lightingShader.setVec3("light.diffuse", white.x + diffuse, white.y + diffuse, white.z + diffuse);
+        lightingShader.setVec3("light.specular", white.x + specular, white.y + specular, white.z + specular);
+        lightingShader.setVec3("light.position", lightPos);
         lightingShader.setVec3("material.ambient", 0.1f, 0.1f, 0.1f);
         lightingShader.setFloat("material.shininess", 32.0f);
 
@@ -231,6 +215,18 @@ int main()
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
 
+        lightCubeShader.use();
+        lightCubeShader.setMat4("projection", projection);
+        lightCubeShader.setMat4("view", view);
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, lightPos);
+        model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+        lightCubeShader.setMat4("model", model);
+
+        glBindVertexArray(lightCubeVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
+
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
@@ -256,19 +252,6 @@ void processInput(GLFWwindow *window)
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
-
-    if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
-    {
-        if (!uKeyPressed)
-        {
-            lightEnabled = !lightEnabled; // Alterna o estado da luz
-            uKeyPressed = true;           // Marca que a tecla foi pressionada
-        }
-    }
-    else if (glfwGetKey(window, GLFW_KEY_U) == GLFW_RELEASE)
-    {
-        uKeyPressed = false; // Permite que a tecla seja pressionada novamente
-    }
 }
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
