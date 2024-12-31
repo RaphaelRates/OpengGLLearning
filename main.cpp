@@ -17,8 +17,8 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1280;
+const unsigned int SCR_HEIGHT = 720;
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
@@ -26,6 +26,7 @@ float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
 bool uKeyPressed = false;
 bool lightEnabled = true;
+bool isFocus = true;
 
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
@@ -55,8 +56,6 @@ int main()
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
-
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     {
@@ -173,6 +172,14 @@ int main()
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
+        if (isFocus)
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        }
+        else
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        }
 
         // input
         // -----
@@ -326,7 +333,10 @@ void processInput(GLFWwindow *window)
         camera.ProcessKeyboard(LEFT, deltaTime);
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camera.ProcessKeyboard(RIGHT, deltaTime);
-
+    if (glfwGetKey(window, GLFW_KEY_TAB) == GLFW_PRESS)
+    {
+        isFocus = !isFocus;
+    }
     if (glfwGetKey(window, GLFW_KEY_U) == GLFW_PRESS)
     {
         if (!uKeyPressed)
@@ -348,23 +358,26 @@ void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 
 void mouse_callback(GLFWwindow *window, double xposIn, double yposIn)
 {
-    float xpos = static_cast<float>(xposIn);
-    float ypos = static_cast<float>(yposIn);
-
-    if (firstMouse)
+    if (isFocus)
     {
+        float xpos = static_cast<float>(xposIn);
+        float ypos = static_cast<float>(yposIn);
+
+        if (firstMouse)
+        {
+            lastX = xpos;
+            lastY = ypos;
+            firstMouse = false;
+        }
+
+        float xoffset = xpos - lastX;
+        float yoffset = lastY - ypos;
+
         lastX = xpos;
         lastY = ypos;
-        firstMouse = false;
+
+        camera.ProcessMouseMovement(xoffset, yoffset);
     }
-
-    float xoffset = xpos - lastX;
-    float yoffset = lastY - ypos;
-
-    lastX = xpos;
-    lastY = ypos;
-
-    camera.ProcessMouseMovement(xoffset, yoffset);
 }
 
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset)
