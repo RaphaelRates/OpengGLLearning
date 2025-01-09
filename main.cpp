@@ -9,6 +9,7 @@
 #include <engine/texture/shader.hpp>
 #include <engine/renderer/camera.hpp>
 #include <engine/texture/texture.hpp>
+#include <engine/renderer/ObjLoader.cpp>
 
 #include <iostream>
 
@@ -17,8 +18,9 @@ void mouse_callback(GLFWwindow *window, double xpos, double ypos);
 void scroll_callback(GLFWwindow *window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 
-const unsigned int SCR_WIDTH = 1280;
-const unsigned int SCR_HEIGHT = 720;
+const unsigned int SCR_WIDTH = 1920;
+
+const unsigned int SCR_HEIGHT = 1080;
 
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float lastX = SCR_WIDTH / 2.0f;
@@ -64,15 +66,19 @@ int main()
     }
 
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
+    glEnable(GL_STENCIL_TEST);
+    glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
     Shader lightingShader("./GLSL/light.vs", "./GLSL/light.fs");
     Shader lightCubeShader("./GLSL/lightCube.vs", "./GLSL/lightCube.fs");
+    Shader IromShader("./GLSL/light.vs", "./GLSL/ironman.fs");
     Texture box("container.png");
     Texture borderBox("border_steel.png");
     Texture matrix("matrix.jpg");
 
     float vertices[] = {
-        // positions          // normals           // texture coords
         -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
         0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 0.0f,
         0.5f, 0.5f, -0.5f, 0.0f, 0.0f, -1.0f, 1.0f, 1.0f,
@@ -114,6 +120,7 @@ int main()
         0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f,
         -0.5f, 0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f,
         -0.5f, 0.5f, -0.5f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f};
+
     glm::vec3 cubePositions[] = {
         glm::vec3(0.0f, 0.0f, 0.0f),
         glm::vec3(2.0f, 5.0f, -15.0f),
@@ -125,6 +132,7 @@ int main()
         glm::vec3(1.5f, 2.0f, -2.5f),
         glm::vec3(1.5f, 0.2f, -1.5f),
         glm::vec3(-1.3f, 1.0f, -1.5f)};
+
     glm::vec3 pointLightPositions[] = {
         glm::vec3(0.7f, 0.2f, 2.0f),
         glm::vec3(2.3f, -3.3f, -4.0f),
@@ -159,10 +167,23 @@ int main()
     lightingShader.setInt("material.specular", 1);
     lightingShader.setInt("material.emission", 2);
 
+    IromShader.use();
+
     glm::vec3 white(0.21f, 0.21f, 0.21f);
     ;
     float specular = 0.6f;
     float diffuse = 1.5f;
+
+    ObjLoader loader;
+    try
+    {
+        loader.LoadFromFile("./OBJ/cube.obj");
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+        return -1;
+    }
 
     while (!glfwWindowShouldClose(window))
     {
@@ -188,8 +209,8 @@ int main()
         // render
         // ------
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        
         // be sure to activate shader when setting uniforms/drawing objects
         lightingShader.use();
         lightingShader.setVec3("viewPos", camera.Position);
@@ -253,7 +274,6 @@ int main()
             lightingShader.setVec3("spotLight.specular", 0.0f, 0.0f, 0.0f);
         }
 
-        // view/projection transformations
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
         glm::mat4 view = camera.GetViewMatrix();
         lightingShader.setMat4("projection", projection);
@@ -262,21 +282,22 @@ int main()
         // world transformation
         glm::mat4 model = glm::mat4(1.0f);
         lightingShader.setMat4("model", model);
+        loader.Draw();
 
-        // bind diffuse map
         glActiveTexture(GL_TEXTURE0);
         box.bind();
-        // bind specular map
         glActiveTexture(GL_TEXTURE1);
         borderBox.bind();
 
         glActiveTexture(GL_TEXTURE2);
         matrix.bind();
-        // render containers
-        glBindVertexArray(cubeVAO);
+        glBindVertexArray(cubeVAO);  
+
+              
+
+        glStencilMask(0x00);
         for (unsigned int i = 0; i < 10; i++)
         {
-            // calculate the model matrix for each object and pass it to shader before drawing
             glm::mat4 model = glm::mat4(1.0f);
             model = glm::translate(model, cubePositions[i]);
             float angle = 20.0f * i;
@@ -291,6 +312,10 @@ int main()
         lightCubeShader.setMat4("projection", projection);
         lightCubeShader.setMat4("view", view);
 
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilMask(0xFF);
+        glDisable(GL_DEPTH_TEST);
+
         // we now draw as many light bulbs as we have point lights.
         glBindVertexArray(lightCubeVAO);
         for (unsigned int i = 0; i < 4; i++)
@@ -301,6 +326,12 @@ int main()
             lightCubeShader.setMat4("model", model);
             glDrawArrays(GL_TRIANGLES, 0, 36);
         }
+
+        glStencilMask(0xFF);
+        glStencilFunc(GL_ALWAYS, 0, 0xFF);
+        glEnable(GL_DEPTH_TEST);
+
+        // lightingShader.use();
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------

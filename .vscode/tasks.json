@@ -12,13 +12,12 @@
         "-L${workspaceFolder}/lib",
         "${workspaceFolder}/main.cpp",
         "${workspaceFolder}/src/glad.c",
+        "-o",
+        "${workspaceFolder}/main.exe",
         "-lglfw3dll",
         "-lgdi32",
         "-lopengl32",
-        "-DGLFW_DLL",
-        "${workspaceFolder}/include/stb_image.h",
-        "-o",
-        "${workspaceFolder}/main.exe"
+        "-DGLFW_DLL"
       ],
       "options": {
         "cwd": "${workspaceFolder}"
@@ -26,6 +25,7 @@
       "problemMatcher": [
         "$gcc"
       ],
+  
       "group": {
         "kind": "build",
         "isDefault": true
