@@ -65,117 +65,114 @@ public:
         updateCameraVectors();
     }
 
-    // Retorna a matriz de visão calculada usando Euler Angles e LookAt
     glm::mat4 GetViewMatrix()
-{
-    glm::vec3 adjustedPosition = Position;
-
-    if (IsMoving)
     {
-        WalkCycle += MovementSpeed * (isRunning ? 0.01f: 0.005f);
-        if (WalkCycle > 2.0f * glm::pi<float>())
-            WalkCycle -= 2.0f * glm::pi<float>();
+        glm::vec3 adjustedPosition = Position;
 
-        float verticalAmplitude = 0.04f;
-        float horizontalAmplitude = 0.00f;
-        float tiltAmplitude = 0.01f;
+        if (IsMoving)
+        {
+            WalkCycle += MovementSpeed * (isRunning ? 0.004f : 0.001f);
+            if (WalkCycle > 2.0f * glm::pi<float>())
+                WalkCycle -= 2.0f * glm::pi<float>();
 
-        adjustedPosition.y += cos(WalkCycle) * verticalAmplitude;
-        adjustedPosition.x += sin(WalkCycle * 2.0f) * horizontalAmplitude;
+            float verticalAmplitude = 0.04f;
+            float horizontalAmplitude = 0.00f;
+            float tiltAmplitude = 0.01f;
 
-        glm::vec3 target = adjustedPosition + Front;
-        float tilt = sin(WalkCycle) * tiltAmplitude;
-        glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), glm::radians(tilt), Up);
-        target = glm::vec3(rotation * glm::vec4(target - adjustedPosition, 1.0f)) + adjustedPosition;
+            adjustedPosition.y += cos(WalkCycle) * verticalAmplitude;
+            adjustedPosition.x += sin(WalkCycle * 2.0f) * horizontalAmplitude;
 
-        return glm::lookAt(adjustedPosition, target, Up);
+            glm::vec3 target = adjustedPosition + Front;
+            float tilt = sin(WalkCycle) * tiltAmplitude;
+            glm::mat4 rotation = glm::rotate(glm::mat4(1.0f), glm::radians(tilt), Up);
+            target = glm::vec3(rotation * glm::vec4(target - adjustedPosition, 1.0f)) + adjustedPosition;
+
+            return glm::lookAt(adjustedPosition, target, Up);
+        }
+
+        WalkCycle *= 0.9f; 
+        return glm::lookAt(adjustedPosition, adjustedPosition + Front, Up);
     }
 
-    // Quando não há movimento, suaviza a parada do ciclo de caminhada
-    WalkCycle *= 0.9f;  // Suaviza a desaceleração, reduzindo o WalkCycle gradualmente
-    return glm::lookAt(adjustedPosition, adjustedPosition + Front, Up);
-}
+    // Processa a entrada de teclado
+    void
+    ProcessKeyboard(Camera_Movement direction, float deltaTime, bool isRunnig)
+    {
+        float velocity = MovementSpeed * deltaTime;
+        bool isRunngin = isRunnig;
+        IsMoving = false;
 
-// Processa a entrada de teclado
-void
-ProcessKeyboard(Camera_Movement direction, float deltaTime,bool isRunnig)
-{
-    float velocity = MovementSpeed * deltaTime;
-    bool isRunngin = isRunnig;
-    IsMoving = false;
+        if (direction == FORWARD)
+        {
+            Position += Front * velocity;
+            IsMoving = true;
+        }
+        if (direction == BACKWARD)
+        {
+            Position -= Front * velocity;
+            IsMoving = true;
+        }
+        if (direction == LEFT)
+        {
+            Position -= Right * velocity;
+            IsMoving = true;
+        }
+        if (direction == RIGHT)
+        {
+            Position += Right * velocity;
+            IsMoving = true;
+        }
+        if (direction == NONE)
+        {
+            IsMoving = false; // Não há movimento, animação de caminhada é interrompida
+        }
 
-    if (direction == FORWARD)
-    {
-        Position += Front * velocity;
-        IsMoving = true;
-    }
-    if (direction == BACKWARD)
-    {
-        Position -= Front * velocity;
-        IsMoving = true;
-    }
-    if (direction == LEFT)
-    {
-        Position -= Right * velocity;
-        IsMoving = true;
-    }
-    if (direction == RIGHT)
-    {
-        Position += Right * velocity;
-        IsMoving = true;
-    }
-    if (direction == NONE)
-    {
-        IsMoving = false; // Não há movimento, animação de caminhada é interrompida
+        Position.y = 0.0f;
     }
 
-    Position.y = 0.0f;
-}
-
-// Processa a entrada do mouse
-void ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true)
-{
-    xoffset *= MouseSensitivity;
-    yoffset *= MouseSensitivity;
-
-    Yaw += xoffset;
-    Pitch += yoffset;
-
-    if (constrainPitch)
+    // Processa a entrada do mouse
+    void ProcessMouseMovement(float xoffset, float yoffset, GLboolean constrainPitch = true)
     {
-        if (Pitch > 89.0f)
-            Pitch = 89.0f;
-        if (Pitch < -89.0f)
-            Pitch = -89.0f;
+        xoffset *= MouseSensitivity;
+        yoffset *= MouseSensitivity;
+
+        Yaw += xoffset;
+        Pitch += yoffset;
+
+        if (constrainPitch)
+        {
+            if (Pitch > 89.0f)
+                Pitch = 89.0f;
+            if (Pitch < -89.0f)
+                Pitch = -89.0f;
+        }
+
+        updateCameraVectors();
     }
 
-    updateCameraVectors();
-}
-
-// Processa a entrada da roda do mouse
-void ProcessMouseScroll(float yoffset)
-{
-    Zoom -= yoffset;
-    if (Zoom < 1.0f)
-        Zoom = 1.0f;
-    if (Zoom > 45.0f)
-        Zoom = 45.0f;
-}
+    // Processa a entrada da roda do mouse
+    void ProcessMouseScroll(float yoffset)
+    {
+        Zoom -= yoffset;
+        if (Zoom < 1.0f)
+            Zoom = 1.0f;
+        if (Zoom > 45.0f)
+            Zoom = 45.0f;
+    }
 
 private:
-// Atualiza os vetores da câmera com base nos ângulos de Euler
-void updateCameraVectors()
-{
-    glm::vec3 front;
-    front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-    front.y = sin(glm::radians(Pitch));
-    front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-    Front = glm::normalize(front);
+    // Atualiza os vetores da câmera com base nos ângulos de Euler
+    void updateCameraVectors()
+    {
+        glm::vec3 front;
+        front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
+        front.y = sin(glm::radians(Pitch));
+        front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
+        Front = glm::normalize(front);
 
-    Right = glm::normalize(glm::cross(Front, WorldUp));
-    Up = glm::normalize(glm::cross(Right, Front));
-}
-}
-;
+        Right = glm::normalize(glm::cross(Front, WorldUp));
+        Up = glm::normalize(glm::cross(Right, Front));
+    }
+};
 
 #endif
