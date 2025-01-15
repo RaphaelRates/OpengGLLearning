@@ -16,6 +16,7 @@
 #include <engine/AudioManeger.hpp>
 #include <engine/framebuffer.hpp>
 #include <engine/Model.hpp>
+#include <engine/InputManeger.hpp>
 
 #include <vector>
 #include <map>
@@ -310,21 +311,17 @@ int main()
 
 #pragma endregion
 
+    InputHandler input(window,camera,sound);
     while (!glfwWindowShouldClose(window))
     {
-        // per-frame time logic
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        // input
-        processInput(window);
+        input.processInput(deltaTime);
 
-        // Bind o framebuffer para renderizar para ele
         framebuffer.bind();
         glEnable(GL_DEPTH_TEST);
-
-        // Ordenar as janelas transparentes antes de renderizar
         std::map<float, glm::vec3> sorted;
         for (unsigned int i = 0; i < windows.size(); i++)
         {
@@ -332,11 +329,8 @@ int main()
             sorted[distance] = windows[i];
         }
 
-        // Limpar o framebuffer
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        // Renderizar os objetos
 
         shader.use();
         glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 100.0f);
@@ -406,74 +400,6 @@ int main()
 }
 
 #pragma region Functions
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window)
-{
-    int esc = glfwGetKey(window, GLFW_KEY_ESCAPE);
-    int w = glfwGetKey(window, GLFW_KEY_W);
-    int s = glfwGetKey(window, GLFW_KEY_S);
-    int a = glfwGetKey(window, GLFW_KEY_A);
-    int d = glfwGetKey(window, GLFW_KEY_D);
-    int shiftL = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
-    int shiftR = glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT); // Verifica se CTRL está pressionado
-    bool isWalking = w == GLFW_PRESS || a == GLFW_PRESS || s == GLFW_PRESS || d == GLFW_PRESS;
-    bool isRunning = isWalking && (shiftL == GLFW_PRESS || shiftR == GLFW_PRESS);
-
-    // Adicionando prints para depuração
-    // printf("CTRL Left: %d, CTRL Right: %d, Walking: %d, ", shiftL, shiftR, isWalking);
-
-    // Se pressionar ESC, fecha a janela
-    if (esc == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-    double currentTime = glfwGetTime();
-
-    // Ajusta a velocidade de movimento com base no CTRL
-    // A velocidade aumenta se qualquer um dos CTRLs for pressionado
-    float speed = isRunning ? 1.2f : 0.5f;
-
-    // Print da velocidade para depuração
-    // printf("Speed: %.2f\n", speed);
-
-    // Processa os movimentos da câmera
-    if (w == GLFW_PRESS)
-        camera.ProcessKeyboard(FORWARD, deltaTime * speed, isRunning);
-    if (s == GLFW_PRESS)
-        camera.ProcessKeyboard(BACKWARD, deltaTime * speed, isRunning);
-    if (a == GLFW_PRESS)
-        camera.ProcessKeyboard(LEFT, deltaTime * speed, isRunning);
-    if (d == GLFW_PRESS)
-        camera.ProcessKeyboard(RIGHT, deltaTime * speed, isRunning);
-
-    // Se nenhuma tecla de movimento for pressionada, a câmera para
-    if (!isWalking)
-    {
-        camera.ProcessKeyboard(NONE, deltaTime * speed, false);
-    }
-    if (glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS)
-    {
-        sound.playAudio(0);
-    }
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS)
-    {
-        ; // Tempo atual
-
-        // Verifica se já passou o tempo suficiente desde o último som
-        if (currentTime - lastPlayTime >= delay)
-        {
-            sound.playAudioRepeter(2);  // Reproduz o som
-            lastPlayTime = currentTime; // Atualiza o tempo do último som
-        }
-    }
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)
-    {
-        if (currentTime - lastPlayTime >= delay)
-        {
-            sound.playAudioRepeter(1);  // Reproduz o som
-            lastPlayTime = currentTime; // Atualiza o tempo do último som
-        }
-    }
-}
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
 // ---------------------------------------------------------------------------------------------
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
